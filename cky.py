@@ -2,13 +2,17 @@
 
 import sys
 import numpy as np
+from pprint import pprint
 
-
-#The simple logic to write the program is pi[i, j,X] = maximum probability of a constituent with non-terminal X spanning words i . . . j inclusive
+"""
+#The simple logic to write the program is pi[i, j,X] = maximum probability
+of a constituent with non-terminal X spanning words i . . . j inclusive
 ## Our goal is to find pi[1,n,S] 
 ### Base case is to define all words if they are present in the lexicons
-#### The import one, the recursive definition pi(i,j,X) = max(q(x->yz)*pi(i,t,y)*pi(t+1,j,z)) given x->yz is in the grammar and t belongs to i:j-1
-
+#### The import one, the recursive definition pi(i,j,X) = 
+max(q(x->yz)*pi(i,t,y)*pi(t+1,j,z))
+given x->yz is in the grammar and t belongs to i:j-1
+"""
 class Unary_Rule:
     def __init__(self,*rule):
         self.left, self.right = rule[0],rule[1]
@@ -39,7 +43,7 @@ def preProcessGrammar(grammar_rules):
                 lexicon = Lexicon(*temp)
                 Lexicons.append(lexicon)
             else:
-                print(temp[2])
+                # print("debug: ",temp[2])
                 unary = Unary_Rule(*temp)
                 Unaries.append(unary)
         else:
@@ -60,7 +64,48 @@ def getNonTerminals(Binaries,Unaries,Lexicons):
     for rule in Lexicons:
         N.add(rule.left)
 
-    return list(N)
+    return dict(zip(list(N),list(range(len(N)))))
+
+def searchInLexicons(n, word, Lexicons):
+    for Lexicon in Lexicons:
+        if(Lexicon.left == n and Lexicon.word == word):
+            return True, float(Lexicon.prob)
+    return False,0
+
+def searchInUnaries(n1, n2, Unaries):
+    for unary in Unaries:
+        if(unary.left == n1 and unary.right == n2):
+            return True, float(unary.prob)
+    return False,0  
+
+def searchInBinaries(n1, n2, n3, Binaries):
+    for Lexicon in Lexicons:
+        if(Lexicon.left == n and Lexicon.word == word):
+            return True, Lexicon.prob
+    return False,0
+
+def shuffleNonTerminals(N, number):
+    """
+    Create all possible combinations of the non-teminals in 
+    number X number X number ways
+    """
+
+    length = len(N.keys())
+
+    S = []  ## S is for the shuffled list
+    if(number == 2):
+        for n1 in N.keys():
+            for n2 in N.keys():
+                S.append([n1,n2])
+
+    if(number == 3):
+        for n1 in N.keys():
+            for n2 in N.keys():
+                for n3 in N.keys():
+                    S.append([n1,n2,n3])
+
+    return S
+
 
 
 def ckyAlgorithm(sentence, grammar_rules):
@@ -85,16 +130,58 @@ def ckyAlgorithm(sentence, grammar_rules):
     returns [mostProbableParse, probability]
     """
     Binaries, Unaries, Lexicons = preProcessGrammar(grammar_rules)
+    # print("\ndebug: Printing all Grammar Rules \n", preProcessGrammar(grammar_rules),"\n")
+
     N = getNonTerminals(Binaries,Unaries,Lexicons)
-    length = len(sentence.split())
+    num_words = len(sentence.split())
     words = sentence.split()
-    score = [[[0 for i in range(len(N))] for j in range(length)] for k in range(length)]
-    back = [[[[] for i in range(len(N))] for j in range(length)] for k in range(length)]
+    score = [[[0 for i in range(len(N))] for j in range(num_words + 1)] for k in range(num_words + 1)]
+    back = [[[[] for i in range(len(N))] for j in range(num_words + 1)] for k in range(num_words + 1)]
 
     # print("debug: score.shape", np.array(score).shape)
 
     ## For Unaries 
-    # for i in range(length):
+    # print("The non-terminals are :",N)
+    for i,word in enumerate(words):
+        print("SPAN:", word)
+        for n in N.keys():
+            found, prob =  searchInLexicons(n, word, Lexicons)
+            if found and i < num_words - 1:
+                score[i][i+1][N[n]] = (prob)
+
+        
+        
+
+        added = True
+        while added:
+            added = False
+            # i=0
+            for temp in shuffleNonTerminals(N,2):
+                A, B  = temp[0],temp[1]
+                # print("debug ",A,B, i ) ; i+=1
+                # print(":debug ",type(score[i][i+1][N[B]]))
+                if i < num_words - 1:
+                    if (score[i][i+1][N[B]] > 0) and (searchInUnaries(A, B, Unaries)[0]):
+                        # print("debug: It comes inside")
+                        prob = searchInUnaries(A, B, Unaries)[1] * score[i][i+1][N[B]]
+                        if prob > score[i][i+1][N[A]]:
+                            # print("debug: It comes inside")
+                            score[i][i+1][N[A]] = (prob)
+                            back[i][i+1][N[A]] = B
+                            added = True
+        for ii in range(len(N)):
+            if(score[i][i+1][ii] != 0):
+                print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[i][i+1][ii],2),"(BackPointer =",back[i][i+1][ii])
+
+                #P(NP) = 0.14 (BackPointer = N)
+            # assert False
+        # print("\n\ndebug: The score after editing diagonal elements", score)
+
+
+
+    
+
+
 
 
 
@@ -121,4 +208,4 @@ def main():
 ## Dynamic Programming Task 
 # How will you do it!!!??
 
-# main()
+main()
