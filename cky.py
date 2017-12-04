@@ -197,7 +197,7 @@ def ckyAlgorithm(sentence, grammar_rules):
         for begin in range(0,len(words) - span + 1):
 
             end = begin + span
-            print("\nSPAN:",words[begin:end])
+
             for split in range(begin+1, end):
                 for temp in shuffleNonTerminals(N,3):
                     A, B, C = temp[0], temp[1], temp[2]
@@ -233,7 +233,7 @@ def ckyAlgorithm(sentence, grammar_rules):
 
                 if(score[begin][end][ii] != 0):
                     # print("Coming INSIDE PRANOY")
-                    print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[begin][end][ii],4),"(BackPointer =",back[begin][end][ii],")")
+                    print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[begin][end][ii],8),"(BackPointer =",back[begin][end][ii],")")
 
 
 
