@@ -1,0 +1,38 @@
+Printing the Binaries
+
+S     -> NP    VP    :Prob -0.9
+VP    -> V     NP    :Prob -0.5
+VP    -> V     @VP_V :Prob -0.3
+VP    -> V     PP    :Prob -0.1
+@VP_V -> NP    PP    :Prob -1.0
+NP    -> NP    NP    :Prob -0.1
+NP    -> NP    PP    :Prob -0.2
+PP    -> P     NP    :Prob -1.0
+
+
+
+Printing the Unaries
+
+S     -> VP          :Prob -0.1
+VP    -> V           :Prob -0.1
+NP    -> N           :Prob -0.7
+
+
+
+
+Printing the Lexicons
+
+N     -> people      :Prob -0.5
+N     -> fish        :Prob -0.2
+N     -> tanks       :Prob -0.2
+N     -> rods        :Prob -0.1
+V     -> people      :Prob -0.1
+V     -> fish        :Prob -0.6
+V     -> tanks       :Prob -0.3
+P     -> with        :Prob -1.0
+
+
+
+"""""
+  The non-terminals are ::::: {'S': 0, '@VP_V': 1, 'VP': 2, 'V': 3, 'N': 4, 'P': 5, 'NP': 6, 'PP': 7} 
+"""""

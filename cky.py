@@ -79,9 +79,9 @@ def searchInUnaries(n1, n2, Unaries):
     return False,0  
 
 def searchInBinaries(n1, n2, n3, Binaries):
-    for Lexicon in Lexicons:
-        if(Lexicon.left == n and Lexicon.word == word):
-            return True, Lexicon.prob
+    for binary in Binaries:
+        if(binary.left == n1 and binary.right1 == n2 and binary.right2 == n3):
+            return True, float(binary.prob)
     return False,0
 
 def shuffleNonTerminals(N, number):
@@ -107,6 +107,17 @@ def shuffleNonTerminals(N, number):
     return S
 
 
+def printGrammarRules(B, U, L):
+    print("Printing the Binaries")
+    for b in B:
+        print("{:5} -> {:5} {:5} :Prob -{}".format(b.left,b.right1,b.right2,b.prob))
+    print("Printing the Unaries")
+    for u in U:
+        print("{:5} -> {:11} :Prob -{}".format(u.left,u.right,u.prob))
+    print("Printing the Lexicons")
+    for l in L:
+        print("{:5} -> {:11} :Prob -{}".format(l.left,l.word,l.prob))
+
 
 def ckyAlgorithm(sentence, grammar_rules):
     """
@@ -130,9 +141,10 @@ def ckyAlgorithm(sentence, grammar_rules):
     returns [mostProbableParse, probability]
     """
     Binaries, Unaries, Lexicons = preProcessGrammar(grammar_rules)
-    # print("\ndebug: Printing all Grammar Rules \n", preProcessGrammar(grammar_rules),"\n")
+    # print("\ndebug: Printing all Grammar Rules \n", printGrammarRules(Binaries, Unaries, Lexicons),"\n")
 
     N = getNonTerminals(Binaries,Unaries,Lexicons)
+    # print(":debug \n\n\n\"\"\"\"\"\n  The non-terminals are :::::",N, "\n\"\"\"\"\"\n\n\n")
     num_words = len(sentence.split())
     words = sentence.split()
     score = [[[0 for i in range(len(N))] for j in range(num_words + 1)] for k in range(num_words + 1)]
@@ -141,16 +153,16 @@ def ckyAlgorithm(sentence, grammar_rules):
     # print("debug: score.shape", np.array(score).shape)
 
     ## For Unaries 
-    # print("The non-terminals are :",N)
+    # print(":debug, The non-terminals are :",N)
     for i,word in enumerate(words):
         print("SPAN:", word)
         for n in N.keys():
             found, prob =  searchInLexicons(n, word, Lexicons)
-            if found and i < num_words - 1:
+            # print(found)
+            if found and i < num_words:
+                # print("Coming INSIDE PRANOY")
                 score[i][i+1][N[n]] = (prob)
 
-        
-        
 
         added = True
         while added:
@@ -160,7 +172,7 @@ def ckyAlgorithm(sentence, grammar_rules):
                 A, B  = temp[0],temp[1]
                 # print("debug ",A,B, i ) ; i+=1
                 # print(":debug ",type(score[i][i+1][N[B]]))
-                if i < num_words - 1:
+                if i < num_words :
                     if (score[i][i+1][N[B]] > 0) and (searchInUnaries(A, B, Unaries)[0]):
                         # print("debug: It comes inside")
                         prob = searchInUnaries(A, B, Unaries)[1] * score[i][i+1][N[B]]
@@ -170,16 +182,59 @@ def ckyAlgorithm(sentence, grammar_rules):
                             back[i][i+1][N[A]] = B
                             added = True
         for ii in range(len(N)):
+
             if(score[i][i+1][ii] != 0):
-                print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[i][i+1][ii],2),"(BackPointer =",back[i][i+1][ii])
+                # print("Coming INSIDE PRANOY")
+                print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[i][i+1][ii],4),"(BackPointer =",back[i][i+1][ii],")")
 
                 #P(NP) = 0.14 (BackPointer = N)
             # assert False
         # print("\n\ndebug: The score after editing diagonal elements", score)
 
 
+    for span in range(2,len(words) + 1):
 
-    
+        for begin in range(0,len(words) - span + 1):
+
+            end = begin + span
+            print("\nSPAN:",words[begin:end])
+            for split in range(begin+1, end):
+                for temp in shuffleNonTerminals(N,3):
+                    A, B, C = temp[0], temp[1], temp[2]
+
+                    if searchInBinaries(A, B, C, Binaries)[0]:
+                        found, prob = searchInBinaries(A, B, C, Binaries)
+                        prob=score[begin][split][N[B]]*score[split][end][N[C]]*prob
+                        if prob > score[begin][end][N[A]]:
+                            score[begin][end][N[A]] = prob
+                            back[begin][end][N[A]] = (split,B,C)
+
+
+        ##handle unaries
+        added = True
+        while added:
+            added = False
+        for temp in shuffleNonTerminals(N,2):
+                A, B  = temp[0],temp[1]
+
+                if(searchInUnaries(A, B, Unaries)[0]):
+                    prob =  searchInUnaries(A, B, Unaries)[1] * score[begin][end][N[B]];
+                    if prob > score[begin][end][N[A]]:
+                        score[begin][end][N[A]] = prob
+                        back[begin][end][N[A]] = B
+                        added = True   
+
+        for begin in range(0,len(words) - span + 1):
+
+            end = begin + span
+            print("\nSPAN:",words[begin:end])
+
+            for ii in range(len(N)):
+
+                if(score[begin][end][ii] != 0):
+                    # print("Coming INSIDE PRANOY")
+                    print("P(",list(N.keys())[list(N.values()).index(ii)],") =",round(score[begin][end][ii],4),"(BackPointer =",back[begin][end][ii],")")
+
 
 
 
@@ -203,7 +258,7 @@ def main():
 
 
     for sent in sents:
-        print("PROCESSING SENTENCE:",sent,'\n')
+        print("\nPROCESSING SENTENCE:",sent,'\n')
         ckyAlgorithm(sent, grammar_rules)
 ## Dynamic Programming Task 
 # How will you do it!!!??
